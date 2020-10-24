@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: obsfs-provider
+  name: obsfs-provider
+spec:
+  template:
+    metadata:
+      labels:
+        app: obsfs-provider
+    spec:
+      containers:
+      - name: obsfs
+        image: travelliu/kube-obsfs
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","umount -f /var/obsfs"]
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+        # use ALL  entries in the config map as environment variables
+        envFrom:
+        - configMapRef:
+            name: obsfs-config
+        volumeMounts:
+        - name: devfuse
+          mountPath: /dev/fuse
+        - name: mntdataobsfs
+          mountPath: /var/obsfs:shared
+      volumes:
+      - name: devfuse
+        hostPath:
+          path: /dev/fuse
+      - name: mntdataobsfs
+        hostPath:
+          path: /mnt/data-obs-fs
